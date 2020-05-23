@@ -36,7 +36,9 @@ JSON_GETTER(const char *, String, string, NULL);
 
 void freeTODOList(TODOEntry **list, size_t listLength) {
     for (size_t i = 0; i < listLength; i++) {
-        free((char *)list[i]->title);
+        if (list[i] != NULL) {
+            free((char *)list[i]->title);
+        }
         free(list[i]);
     }
     free(list);
@@ -118,10 +120,18 @@ json_err parseTODOS(char *json, size_t jsonSize, size_t *outListLength, TODOEntr
     return json_err_ok;
 }
 
+void freeRows(char ***rows, size_t amount) {
+    for (size_t i = 0; i < amount; i++) {
+        free(rows[i][0]);
+        free(rows[i][1]);
+        free(rows[i]);
+    }
+}
+
 int main() {
     curl_global_init(CURL_GLOBAL_ALL);
     char *data;
-    CURLcode curlErr = httpGet("https://jsonplaceholder.typicode.com/todos", &data);
+    CURLcode curlErr = httpGet("https://jsonplaceholder.typicode.com/todos/1", &data);
     
     if (curlErr != CURLE_OK) {
         printf("Curl error: %d", curlErr);
@@ -129,7 +139,7 @@ int main() {
     }
 
     size_t outListLength;
-    TODOEntry **outEntries;
+    TODOEntry **outEntries = NULL;
     json_err err = parseTODOS(data, strlen(data), &outListLength, &outEntries);
 
     if (err != json_err_ok) {
@@ -146,13 +156,18 @@ int main() {
 
         if (userID == NULL) {
             printf("Error: (UserID) Could not allocate memory.\n");
+            freeRows(rows, i);
+            freeTODOList(outEntries, outListLength);
             return 1;
         }
 
         char *ID = calloc(11, sizeof(char));
 
-        if (userID == NULL) {
+        if (ID == NULL) {
+            free(userID);
             printf("Error: (ID) Could not allocate memory.\n");
+            freeRows(rows, i);
+            freeTODOList(outEntries, outListLength);
             return 1;
         }
 
@@ -161,6 +176,10 @@ int main() {
         char **row = calloc(4, sizeof(char *));
 
         if (row == NULL) {
+            free(ID);
+            free(userID);
+            freeRows(rows, i);
+            freeTODOList(outEntries, outListLength);
             return 1;
         }
 
@@ -174,10 +193,6 @@ int main() {
     Table table = { headers: headers, headersCount: 4, rows: rows, rowsCount: outListLength };
     drawTable(&table);
     freeTODOList(outEntries, outListLength);
-    for (size_t i = 0; i < outListLength; i++) {
-        free(rows[i][0]);
-        free(rows[i][1]);
-        free(rows[i]);
-    }
+    freeRows(rows, outListLength);
     return 0;
 }
