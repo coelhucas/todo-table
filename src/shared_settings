@@ -1,0 +1,7 @@
+set(BUILD_DIRECTORY ${CMAKE_BINARY_DIR}/../dist)
+file(MAKE_DIRECTORY ${BUILD_DIRECTORY})
+set(LIBRARY_OUTPUT_PATH ${BUILD_DIRECTORY})
+set(EXECUTABLE_OUTPUT_PATH ${BUILD_DIRECTORY})
+
+include_directories(.. ../../vendor/include)
+link_directories(../../vendor/lib)

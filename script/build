@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd build
+cmake ..
+make
+cp ../vendor/lib/libjson-c.so ../dist
