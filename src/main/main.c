@@ -184,7 +184,7 @@ void freeRows(char ***rows, size_t amount) {
 int main() {
     curl_global_init(CURL_GLOBAL_ALL);
     char *data;
-    CURLcode curlErr = httpGet("https://jsonplaceholder.typicode.com/todos/1", &data);
+    CURLcode curlErr = httpGet("https://jsonplaceholder.typicode.com/todos/", &data);
     
     if (curlErr != CURLE_OK) {
         printf("Curl error: %d", curlErr);
@@ -192,6 +192,7 @@ int main() {
     }
 
     TODOEntry **outEntries = NULL;
+    size_t outListLength;
     json_err err = parseTODOS(data, strlen(data), &outListLength, &outEntries);
 
     if (err != json_err_ok) {
