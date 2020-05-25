@@ -5,6 +5,12 @@
 
 const size_t CELL_SPACING = 2;
 
+/*
+ * calculateWidths attempts to calculate the correct width for each table column
+ * based on a received table.
+ * 
+ * In case of an allocation error, it exits the application.
+ */
 void calculateWidths(Table *table) {
     table->columnsWidth = calloc(table->headersCount, sizeof(size_t));
 
@@ -26,6 +32,17 @@ void calculateWidths(Table *table) {
     }
 }
 
+/*
+ * padString attempts to add spacing to a string until it
+ * reaches the desired size.
+ * 
+ * string      - A string to receive the padding
+ * desiredSize - A number representing the desired size.
+ * 
+ * Returns the string with the desired padding in spaces, added
+ * to the right of the string. Returned values must be manually freed by the 
+ * caller once they are no longer needed.
+ */
 char *padString(char *string, size_t desiredSize) {
     char *result = calloc(desiredSize + 1, sizeof(char));
     if (result == NULL) {
@@ -40,6 +57,15 @@ char *padString(char *string, size_t desiredSize) {
     return result;
 }
 
+/*
+ * repeat attempts to return a string repeated N times.
+ * 
+ * c     - String to be repeated.
+ * times - Amount of times to repeat the string.
+ * 
+ * Returns NULL in case allocation fails. Otherwise, returns the generated string. 
+ * The result of this function must be manually freed after it is no longer used.
+ */
 char *repeat(char *c, size_t times) {
     size_t cSize = strlen(c);
     char *result = calloc((cSize * times) + 1, sizeof(char));
@@ -55,6 +81,15 @@ char *repeat(char *c, size_t times) {
     return result;
 }
 
+/*
+ * makeLine prints a line based on a char to be repeated, a separator
+ * and a end string.
+ * 
+ * c         - A string to be repeated based on the table cell size.
+ * separator - A string to be drawn between cells.
+ * end       - A string to be drawn at the end of a line.
+ * table     - The Table used as reference for the line sizes.
+ */
 void makeLine(char *c, char *separator, char *end, Table *table) {
     for (size_t i = 0; i < table->headersCount; i++) {
         char *tableLine = repeat(c, table->columnsWidth[i] + CELL_SPACING);

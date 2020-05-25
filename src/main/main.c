@@ -22,6 +22,18 @@ typedef enum {
 
 char *jsonErrors[4] = { "Ok", "Parse failed", "Allocation failed", "Invalid JSON type" };
 
+/*
+ * JSON_GETTER is a macro responsible for expanding a function to get values from
+ * a json object.
+ * 
+ * c_type        - Type to be returned.
+ * name          - Name of the type to be used in expanded function signature.
+ * json_type     - Name of the type in `json-c`.
+ * default_value - Default value to be returned in case of inconsistencies/errors.
+ * 
+ * The expandend function should return the `default_value` or a `c_type` contained
+ * in a json object key.
+ */
 #define JSON_GETTER(c_type, name, json_type, default_value) c_type getJson##name(json_object *jsonObj, const char *key) { \
     json_object *jsonWrapper = json_object_object_get(jsonObj, key); \
     if (json_object_get_type(jsonWrapper) != json_type_##json_type) { \
@@ -34,6 +46,13 @@ JSON_GETTER(int, Int, int, 0);
 JSON_GETTER(bool, Bool, boolean, false);
 JSON_GETTER(const char *, String, string, NULL);
 
+/*
+ * Utility function to free memory allocated for each dynamic
+ * TODOEntry from a TODOEntry list and then the list itself.
+ * 
+ * list       - List containing each allocated TODOEntry.
+ * listLength - A number representing the size of the list.
+ */
 void freeTODOList(TODOEntry **list, size_t listLength) {
     for (size_t i = 0; i < listLength; i++) {
         if (list[i] != NULL) {
@@ -44,6 +63,16 @@ void freeTODOList(TODOEntry **list, size_t listLength) {
     free(list);
 }
 
+/*
+ * parseTODO attempts to parse an individual TODOEntry based on
+ * a json_object value and a TODOEntry out.
+ * 
+ * entry - Json object to be parsed.
+ * todo  - `TODOEntry **` where the parsed TODOEntry will be written
+ * 
+ * Returns a `json_err_alloc_failed` if it cannot allocate a TODOEntry.
+ * Otherwise, returns a `json_err_ok`.
+ */
 json_err parseTODO(json_object *entry, TODOEntry **todo) {
     char *entryTitle = strdup(getJsonString(entry, "title"));
 
@@ -66,6 +95,22 @@ json_err parseTODO(json_object *entry, TODOEntry **todo) {
     return json_err_ok;
 }
 
+/* 
+ * parseTODOS attempts to parse a json containing a TODO list. 
+ * json          - A string containing the json contents.
+ * jsonSize      - A number representing the size of json.
+ * outListLength - A number which will receive the final TODO list size
+ *                  after parsing the list.
+ * outEntries    - Responsible for receiving a `TODOEntry ***` containing the
+ *                 resulted todo entries list.
+ * 
+ * Returns a `json_err_aloc_failed` if any of the allocations fail. It also
+ * can returns a `json_err_parse-failed` if there's a error from json_tokener or 
+ * the parsed json object became null.
+ * 
+ * If the received json is not an object or an array, it can also return a `json_err_invalid_type`.
+ * Otherwise, returns a `json_err_ok`.
+ */
 json_err parseTODOS(char *json, size_t jsonSize, size_t *outListLength, TODOEntry ***outEntries) {
     struct json_tokener *tok = json_tokener_new();
     enum json_type type;
@@ -120,6 +165,14 @@ json_err parseTODOS(char *json, size_t jsonSize, size_t *outListLength, TODOEntr
     return json_err_ok;
 }
 
+/*
+ * Utility function to free memory allocated for each dynamic
+ * value from a row and then the row itself.
+ * 
+ * rows   - A string containing the rows to be freed.
+ * amount - A number representing until when we still free the rows
+ *          (for cases where an error occurs before allocating all existing rows)
+ */
 void freeRows(char ***rows, size_t amount) {
     for (size_t i = 0; i < amount; i++) {
         free(rows[i][0]);
@@ -138,7 +191,6 @@ int main() {
         return 1;
     }
 
-    size_t outListLength;
     TODOEntry **outEntries = NULL;
     json_err err = parseTODOS(data, strlen(data), &outListLength, &outEntries);
 
