@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <curl/curl.h>
 #include "http.h"
 
 typedef struct {
@@ -11,7 +12,7 @@ size_t writeCallback(void *contents, size_t size, size_t nMembers, void *rawMemo
     size_t realSize = size * nMembers;
     MemoryStruct *memory = (MemoryStruct *)rawMemory;
     char *newMemory = realloc(memory->response, realSize + memory->size + 1);
-    
+
     if (newMemory == NULL) {
         return 0;
     }
@@ -23,13 +24,15 @@ size_t writeCallback(void *contents, size_t size, size_t nMembers, void *rawMemo
     return realSize;
 }
 
-CURLcode httpGet(const char *url, char **result) {
+http_err httpGet(const char *url, char **result) {
+    curl_global_init(CURL_GLOBAL_ALL);
     CURL *curl = curl_easy_init();
     MemoryStruct memory;
     memory.response = calloc(1, sizeof(char));
 
     if (memory.response == NULL) {
-        return CURLE_WRITE_ERROR;
+        curl_easy_cleanup(curl);
+        return http_err_write_error;
     }
 
     memory.size = 0;
@@ -40,9 +43,16 @@ CURLcode httpGet(const char *url, char **result) {
 
     if (err != CURLE_OK) {
         free(memory.response);
-        return err;
+        printf("(ERROR http.c) CURL ERROR: %d.\n", err);
+        curl_easy_cleanup(curl);
+        switch(err) {
+            case CURLE_COULDNT_RESOLVE_HOST: return http_err_host_error;
+            case CURLE_COULDNT_RESOLVE_PROXY: return http_err_proxy_error;
+            default: return http_err_request_failed;
+        }
     }
 
     *result = memory.response;
-    return CURLE_OK;
+    curl_easy_cleanup(curl);
+    return http_err_ok;
 }
