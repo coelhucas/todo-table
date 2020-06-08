@@ -1,0 +1,4 @@
+#!/bin/bash
+
+script/build
+valgrind --leak-check=full --show-leak-kinds=all -s dist/main
